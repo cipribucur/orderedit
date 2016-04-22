@@ -1,0 +1,6 @@
+<?php $_item = $this->getItem() ?>
+<tr class="border">
+    <td><?php echo $this->getColumnHtml($_item, 'name') ?></td>
+    <td><?php echo $_item->getQty()*1 ?></td>
+    <td class="a-center last"><?php echo $this->getColumnHtml($_item, 'declared') ?></td>
+</tr>

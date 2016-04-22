@@ -1,0 +1,94 @@
+<?php if (Mage::getStoreConfig('toe/orderedit/calc')): ?>
+<?php $status = $this->getOrderStatus() ?>
+<?php $widgetName = "" ?>
+<?php $shippingMethodCode = $this->getOrder()->getShippingMethod(); ?>
+<?php $shippingRates = $this->getShippingAddressRates($this->getRequest()->getParams()) ?>
+<?php if ($this->getRequest()->getParam('newAddressCalc') == 'true'): ?>
+    <?php $widgetName = "shipping" ?>
+<?php elseif ($this->getRequest()->getParam('newMethodCalc') == 'true'): ?>
+    <?php $widgetName = "shippingmethod" ?>
+<?php endif ?>
+
+<?php $currentCheck = "" ?>
+<form id="shipping-radio">
+    <?php if (count($shippingRates) > 0): ?>
+        <div id='<?php echo $widgetName ?>-radio-select'>
+
+            <input type="hidden" name="hasInvoices"
+                   value="<?php echo ($this->getOrder()->hasInvoices()) ? 'yes' : 'no'; ?>" id="hasInvoices"/>
+            <?php foreach ($shippingRates as $key => $shippingRate): ?>
+                <h4><?php echo $key ?></h4>
+                <?php foreach ($shippingRate as $rate):
+                    $checked = ($rate['code'] == $shippingMethodCode and !$this->getOrder()->getCustomCharge()) ?
+                        'checked="checked"' : '';
+                    ?>
+                    <span class='shipping-rate-item'>
+							<span><input class="admin-widget-edit-req-field shippingEdit" type="radio" name="rateid"
+                                         value="<?php echo $rate['code'] ?>"
+                                         id="rateid" <?php echo $checked; ?>/></span>
+							<b><?php echo $this->getFormattedPrice($rate['price']) ?></b>
+							<span> - <?php echo $rate['carrier_title'] ?> - <?php echo $rate['method_title'] ?></span>
+						</span><br/>
+                <?php endforeach; ?>
+            <?php endforeach ?><br/>
+        </div>
+        <input type="hidden" id="customCarrier" name="customCarrier" value="udropship"/>
+    <?php else: ?>
+        <br/><?php echo $this->__('No updated shipping rates were found. Enter a custom rate below'); ?>:<br/><br/>
+    <?php endif ?>
+    <?php endif ?>
+    <span>
+<span class='shipping-rate-item'>  
+    <?php
+    $checked = ($this->getOrder()->getCustomCharge()) ? 'checked="checked"' : '';
+    $style   = (!$this->getOrder()->getCustomCharge()) ? 'style="display:none;"' : '';
+    ?>
+    <span><input class="admin-widget-edit-req-field shippingEdit" type="radio" name="rateid" value="custom"
+                 id="rateid" <?php echo $checked; ?> /></span>
+    <span><?php echo $this->__('Custom Shipping Method'); ?></span>
+</span><br/>
+<div id="customShippingRate" <?php echo $style; ?>>
+    <span><?php echo $this->__('Custom Charge:'); ?></span>
+    <select id="customCharge" name="customCharge">
+        <option value="free" <?php echo $this->getCustomChargeSelected('free'); ?>><?php echo $this->__(
+                'Free'
+            ); ?></option>
+        <option value="noChange" <?php echo $this->getCustomChargeSelected('noChange'); ?>><?php echo $this->__(
+                'No Change'
+            ); ?></option>
+        <option value="custom" <?php echo $this->getCustomChargeSelected('custom'); ?>><?php echo $this->__(
+                'Custom'
+            ); ?></option>
+    </select>
+    <span id="customPrice" <?php echo ($this->isCustomCharge()) ? '' : 'style="display:none;"'; ?>><?php echo $this->__(
+            'Custom Price'
+        ); ?>:
+        <span style="font-weight:bold;">
+            <?php
+            echo $this->getOrderCurrencySymbol();
+            ?>
+        </span>
+        <input name="customPrice" type="text" id="customPricePrice" size="10"
+               value="<?php echo Mage::helper('core')->currency($this->getCustomPrice(), false); ?>"/></span>
+
+    <div id="errorCustomPrice" style="display:none;">
+        <span style="color: red;"><?php echo $this->__(
+                'Custom Price has to be a valid float number bigger than 0.'
+            ); ?></span>
+    </div>
+    <br/>
+    <?php echo $this->__('Custom Method'); ?>
+    <select id="customMethod" name="customMethod">
+        <!-- -->
+        <option value="udropship_flat_rate_simple" <?php echo $this->getCustomMethodSelected
+        (
+            'udropship_flat_rate_simple'
+        ); ?>><?php echo $this->__('Flat Rate Simple'); ?></option>
+        <option value="udropship_flat_dhlexpress" <?php echo $this->getCustomMethodSelected
+        (
+            'udropship_flat_dhlexpress'
+        ); ?>><?php echo $this->__('DHL Express'); ?></option>
+        <!-- -->
+    </select>
+</div>
+</form>

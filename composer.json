@@ -1,0 +1,42 @@
+{
+  "name": "evozon/magento_core",
+  "description": "Fix common problems in Magento core",
+  "keywords": [
+    "magento",
+    "core",
+    "bugfix"
+  ],
+  "homepage": "https://github.com/evozon/magento_core",
+  "license": "MIT",
+  "type": "magento-module",
+  "authors": [
+    {
+      "name": "Constantin Bejenaru",
+      "email": "constantin.bejenaru@evozon.com",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "issues": "https://github.com/evozon/magento_core/issues",
+    "wiki": "https://github.com/evozon/magento_core/wiki",
+    "source": "https://github.com/evozon/magento_core"
+  },
+  "require": {
+    "magento-hackathon/magento-composer-installer": "*"
+  },
+  "extra": {
+    "map": [
+      [
+        "app/code/community/Evozon/Core",
+        "app/code/community/Evozon/Core"
+      ],
+      [
+        "app/etc/modules/Evozon_Core.xml",
+        "app/etc/modules/Evozon_Core.xml"
+      ]
+    ]
+  },
+  "suggest": {
+    "n98/magerun": "Tools for managing Magento projects and installations"
+  }
+}

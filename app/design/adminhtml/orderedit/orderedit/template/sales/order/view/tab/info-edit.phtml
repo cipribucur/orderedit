@@ -1,0 +1,779 @@
+<?php
+/**
+ * Magento
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License (AFL 3.0)
+ * that is bundled with this package in the file LICENSE_AFL.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/afl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@magentocommerce.com so we can send you a copy immediately.
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade Magento to newer
+ * versions in the future. If you wish to customize Magento for your
+ * needs please refer to http://www.magentocommerce.com for more information.
+ *
+ * @category    design
+ * @package     default_default
+ * @copyright   Copyright (c) 2010 Magento Inc. (http://www.magentocommerce.com)
+ * @license     http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ */
+?>
+<?php
+$_order = $this->getOrder();
+$isPromotion = (int)$this->isPromotion();
+$promotionSum = Mage::getStoreConfig('promo/rate_promotion/cart_subtotal', $_order->getStoreId());
+
+?>
+<div>
+    <div id="order-messages">
+        <?php echo $this->getChildHtml('order_messages') ?>
+    </div>
+
+    <?php if ($this->canEditOrder($_order->getStatus())): ?>
+        <div class="clear"></div>
+        <button type="button"
+            onclick="saveMe(<?php echo $_order->getSubtotal(). ',' .$isPromotion. ',' .$promotionSum?> )"
+                id="orderEdit" style="height:25px; width:280px; font-size:16px;">Edit Order</button>
+        <div id="comment-field" style="display:none;">
+            <br />
+            <button type="button" onclick="window.location.reload()" id="orderCancelEdit" style="height:25px; width:280px; font-size:16px;">Cancel Edit Order</button>
+            <br />Reason for editing order: <span id="required-comment" style="color:red; display:none;">This is required to edit an order</span><br />
+            <textarea id="edit-order-comment" style="width:450px;"></textarea>
+        </div>
+        <br /><br />
+    <?php endif ?>
+<div id="cancelOrderModal" style="width:200px;height: 200px;display: none;">
+    <div class="modal-body">
+        <h2><?php echo $this->__("Cancel Order"); ?></h2>
+        <form id="cancelOrderForm" method="post" action="<?php echo $this->getUrl('*/*/cancel', array('order_id' => $_order->getId()));?>" name="cancelForm" >
+            <label><?php echo $this->__('Why do you cancel this order?');?></label><br>
+            <textarea name="cancelComment" id="cancelComment"></textarea> <br><br>
+            <input type="submit" id="cancelOrderSubmit" value="Cancel Order" />
+            <input type="hidden" name="form_key" value="<?php echo $this->getFormKey(); ?>" />
+            <input type="button" id="cancelCancel" value="Cancel" />
+        </form>
+    </div>
+</div>
+    <!-- order edit js and style -->
+    <script>
+        
+        (function($){
+            $(document).ready(function() {
+
+                $(document).on("submit", "#cancelOrderForm", function() {
+                    var comment = $('#cancelComment').val();
+                    comment = comment.replace(/\s+/g, '');
+
+                    if (!comment) {
+                        alert('Please insert a comment');
+                        return false;
+                    } else {
+                        $.fancybox.close();
+                    }
+                });
+
+                $(document).on("click", "#cancelCancel", function() {
+                    $.fancybox.close();
+                });
+
+                $(document).on("click", '#cancelOrder', function() {
+                    $.fancybox({
+                        href: '#cancelOrderModal'
+                    });
+                });
+
+                $(document).on("change", '.shippingEdit', function() {
+                    if ($("#hasInvoices").val() == 'yes' && 
+                        !confirm('Changing this will automatically reinvoice with the difference or create a credit memo after save. Are you sure you want to do this?')) {
+                        return false;
+                    }
+                    if(this.value == 'custom') {
+                        $('#customShippingRate').show();
+                    } else {
+                        $('#customShippingRate').hide();
+                    }
+                });
+                $(document).on("change", '#customCharge', function() {
+                    if(this.value == 'custom') {
+                        $('#customPrice').show();
+                    } else {
+                        $('#customPrice').hide();
+                    }
+                });
+            });
+        })(jQuery);
+        
+        
+        function saveMe(subtotal, isPromotion, promotionSum)
+        {
+//            var itemsForm = new varienForm('itemsForm', true);
+
+            if($('orderEdit').innerHTML == 'Edit Order') {
+                $('orderEdit').innerHTML = 'Save Changes';
+                $('account-info-edit-form').show();
+                $('account-info-static').hide();
+                $('billing-edit-form').show();
+                $('billing-static').hide();
+                if ($('shipping-edit-form'))
+                    $('shipping-edit-form').show();
+                if ($('shipping-static'))
+                    $('shipping-static').hide();
+                if ($('shippingmethod-edit-form'))
+                    $('shippingmethod-edit-form').show();
+                //$('shippingmethod-static').hide();
+                $$('.e-item-price').invoke('show');
+                $$('.e-item-option').invoke('show');
+                $$('.e-item-qty').invoke('show');
+                $$('.e-item-discount').invoke('show');
+                $$('.e-item-qty-back-to-stock').invoke('show');
+                $$('.e-item-qty-broken').invoke('show');
+                $$('.e-item-remove').invoke('show');
+                $('items-add-btn').show();
+                $('comment-field').show();
+//                calcShipping();
+            } else {
+                var params = {};
+                if($('edit-order-comment').value == "") {
+                    $('required-comment').show();
+                    return false;
+                }
+                params['admin_user'] = '<?php echo Mage::getSingleton('admin/session')->getUser()->getUsername() ?>';
+                params['comment'] = $('edit-order-comment').value;
+                params['order_id'] = <?php echo $_order->getId() ?>;
+                //get values for billing address
+                var billing = $('billing-fields').serialize(true);
+                params['billing'] = Object.toJSON(billing);
+                var accountInfo = $('account-info-fields').serialize(true);
+                params['accountinfo'] = Object.toJSON(accountInfo);
+                //get values for shipping address
+                if ($('shipping-fields'))
+                {
+                    var	shipping = $('shipping-fields').serialize(true);
+                    params['shipping'] = Object.toJSON(shipping);
+                }
+                
+                //get values for existing items on order
+                
+                var optArr = new Array();
+                var optProductArr = new Array();
+                var ii = 0;
+                var itemId = 0;
+                var eitems = new Object();
+                eitems.id = new Array();
+                eitems.price = new Array();
+                eitems.option = new Array();
+                eitems.qty = new Array();
+                eitems.discount = new Array();
+                eitems.qty_back_to_stock= new Array();
+                eitems.qty_broken = new Array();
+                eitems.remove = new Array();
+                eitems.type = 'eitems';
+                $$('.e-item-id').each(function(s){
+                    eitems.id.push(s.value);
+                });
+                $$('.e-item-qty').each(function(s){
+                    eitems.qty.push(s.value);
+                });
+                $$('.e-item-qty-broken').each(function(s){
+                    if (s.value) {
+                        eitems.qty_broken.push(s.value);
+                    }
+                });
+                $$('.e-item-price').each(function(s){
+                    eitems.price.push(s.value);
+                });
+                /*
+                 * we get all custom option class and then we format the option json that will suport
+                 * every item with all of his custom options. we do this by taking the optionId and itemId from 
+                 * name and the optionvalue from all the elements that have e-item-option class.
+                 */
+                var errorLength = false;
+                var errorLengthId = false;
+                
+                $$('.validate-length').each(function(s){      
+                    var name = s.name;
+                    var classList = s.classList;
+                    var length = false;
+                    var result = false;
+                    var reMax = new RegExp(/^maximum-length-[0-9]+$/);
+                    var reMin = new RegExp(/^minimum-length-[0-9]+$/);
+                    
+                    for(var i=0;i<classList.length;i++) {
+                        var className = classList[i];
+                        var valueToCompare = s.value;
+                        if (className.match(reMax)) {
+                            length = parseInt(className.split('-')[2]);
+                            if (valueToCompare.length > length) {
+                                errorLength = 'You excided the maximum length for some of the item options';
+                                errorLengthId = s.id;
+                                return false;
+                           }
+                        }
+                    }            
+                });
+                
+                if (errorLength !== false ){
+                    $(errorLengthId).focus();
+                    alert(errorLength);
+                    return false;
+                }
+                
+                $$('.e-item-option').each(function(s){
+                    
+                    var name = s.name;
+                    if (typeof name !== 'undefined') {
+                        
+                        var options = new Object();
+                        var optionPrice = 0,
+                            attrPrice = 0;
+
+                        if (s.localName == 'select') {
+                            //parse name and get price
+                            selectedValue = s.selectedOptions[0];
+                            attrPrice = selectedValue.getAttribute('price');
+
+                            if (attrPrice > 0) {
+                                optionPrice = attrPrice;
+                            } else {
+                                optionPrice = 0;
+                            }
+                        }
+
+                        name = name.replace('e-item-option[','');
+                        name = name.replace(new RegExp("]", "g"), '');
+                        name = name.split('[');
+
+                        if (ii == 0) {
+                            itemId = name[0];
+                            ii = 1;
+                        }
+                        options.itemtId = name[0];
+                        options.optionId = name[1];
+                        options.optionValue = s.value;
+                        options.optionPrice = parseFloat(optionPrice);
+
+                        if (name[0] == itemId ) {
+                            optProductArr.push(options);
+                        } else {
+                            optArr.push(optProductArr);
+                            optProductArr = new Array();
+                            optProductArr.push(options);
+                            itemId = name[0];
+                        }
+                    }
+                });
+                optArr.push(optProductArr);
+                eitems.option = optArr;
+                $$('.e-item-discount').each(function(s){
+                    eitems.discount.push(s.value);
+                });
+                $$('.e-item-qty-back-to-stock').each(function(s){
+                    eitems.qty_back_to_stock.push(s.value);
+                });
+                $$('.e-item-remove-val').each(function(s){
+                    eitems.remove.push(s.value);
+                });
+                params['eitems'] = Object.toJSON(eitems);
+
+                var jsSubtotal = getSubtotal(eitems);
+
+                if (isPromotion & jsSubtotal < promotionSum) {
+                    if (!confirm('This edit total sum is under the DHL promotion, continue? If yes, your shipping ' +
+                        ' will turn into flat rate. Current subtotal: ' + jsSubtotal + ' Promotion Limit: ' + promotionSum)) {
+                        return false
+                    }
+                }
+
+                //get values for new items
+                var nitems = new Object();
+                nitems.sku = new Array();
+                nitems.qty = new Array();
+                nitems.price = new Array();
+                nitems.discount = new Array();
+                nitems.qty_back_to_stock = new Array();
+                nitems.type = 'nitems';
+                $$('.n-item-sku').each(function(s){
+                    nitems.sku.push(s.value);
+                });
+                $$('.n-item-qty').each(function(s){
+                    nitems.qty.push(s.value);
+                });
+                $$('.n-item-price').each(function(s){
+                    nitems.price.push(s.value);
+                });
+                $$('.n-item-discount').each(function(s){
+                    nitems.discount.push(s.value);
+                });
+                $$('.n-item-qty-back-to-stock').each(function(s){
+                    nitems.qty_back_to_stock.push(s.value);
+                });
+                params['nitems'] = Object.toJSON(nitems);
+                //get values for shipping method 
+                if ($('shippingmethod-address-method-select').innerHTML != '')
+                {
+                    var	shippingmethod = $('shippingmethod-fields').serialize(true);
+                    if (shippingmethod.customCharge == 'custom') {
+                        var customPrice = shippingmethod.customPrice;
+                        if (!customPrice.match(/^(?=.+)(?:[1-9]\d*|0)?(?:\.\d+)?$/)) {
+                            $('errorCustomPrice').show();
+                            return false;
+                        }
+                    }
+                    shippingmethod.rateid = $$('input:checked[type="radio"][name="rateid"]').pluck('value');
+                    params['shippingmethod'] = Object.toJSON(shippingmethod);
+                }
+                
+                //send request for saving
+                new Ajax.Request('<?php echo $this->getUrl('adminhtml/order/edit') ?>', {
+                    method: 'post',
+                    parameters: params,
+                    onSuccess: function(transport) {
+                        $('orderEdit').innerHTML = 'Edit Order';
+                        $('account-info-edit-form').hide();
+                        $('account-info-static').show();
+                        $('billing-edit-form').hide();
+                        $('billing-static').show();
+                        if ($('shipping-edit-form'))
+                            $('shipping-edit-form').hide();
+                        if ($('shipping-static'))
+                            $('shipping-static').show();
+                        if ($('shippingmethod-edit-form'))
+                            $('shippingmethod-edit-form').hide();
+                        if ($('shippingmethod-static'))
+                            $('shippingmethod-static').show();
+                        $$('.e-item-price').invoke('hide');
+                        $$('.e-item-option').invoke('hide');
+                        $$('.e-item-qty').invoke('hide');
+                        $$('.e-item-discount').invoke('hide');
+                        $$('.e-item-qty-back-to-stock').invoke('hide');
+                        $$('.e-item-qty-broken').invoke('hide');
+                        $$('.e-item-remove').invoke('hide');
+                        $$('.add-item-form').invoke('hide');
+                        $('items-add-btn').hide();
+                        $('comment-field').hide();
+                        if (transport.responseText.isJSON()) {
+                            var response = transport.responseText.evalJSON();
+                            if (response.error) {
+                                alert(response.message);
+                            } else {
+                                window.location.reload();
+                            }
+                        } else {
+                            alert(transport.responseText);
+                        }
+                    }
+                });	
+            }
+        }
+        
+        function calcShipping()
+        {
+            var params = {};
+            if ($('shipping-fields'))
+            {
+                var	shipping = $('shipping-fields').serialize(true);
+                params['shipping'] = Object.toJSON(shipping);
+//                params['shipping'] = '{"street1":"'  + shipping.street1 + '","city":"'  + shipping.city + '","region":"'
+//                    + shipping.region + '","postcode":"'  + shipping.postcode + '","country_id":"'  + shipping.country_id + '"}';
+                params['order_id'] = <?php echo $_order->getId() ?>;
+                new Ajax.Request('<?php echo Mage::getUrl('adminhtml/order/recalc') ?>', {
+                    method: 'post',
+                    parameters: params,
+                    onSuccess: function(transport) {
+                        $('shippingmethod-address-method-select').innerHTML = transport.responseText;
+                        $('getShippingFlag').val(1);
+                    }
+                });	
+            }
+        }
+	
+        function flagRemoveItem(id) 
+        {
+            if($('rem' + id).value == 0) {
+                $('tblrow' + id).setStyle({
+                    'color': '#CCCCCC'
+                });
+                $('rem' + id).value = 1;
+                $('rem-btn'+id).innerHTML = 'Undo Remove';
+            } else {
+                $('tblrow' + id).setStyle({
+                    'color': ''
+                });
+                $('rem' + id).value = 0;
+                $('rem-btn'+id).innerHTML = 'Remove';
+            }
+        }
+        var x = 1;
+        function addItem()
+        {
+            var params = {};
+            params['num'] = x;
+            new Ajax.Request('<?php echo Mage::getUrl('adminhtml/order/newitem') ?>', {
+                method: 'post',
+                parameters: params,
+                onSuccess: function(transport) {
+                    $('items-table').insert({bottom: transport.responseText});	
+                }
+            });	
+            x++;
+        }
+	
+        function cancelAddItem(id)
+        {
+            $('additem-row-'+id).remove();
+        }
+
+        function $RF(el, radioGroup) {
+            if($(el).type && $(el).type.toLowerCase() == 'radio') {
+                var radioGroup = $(el).name;
+                var el = $(el).form;
+            } else if ($(el).tagName.toLowerCase() != 'form') {
+                return false;
+            }
+	
+            var checked = $(el).getInputs('radio', radioGroup).find(
+            function(re) {return re.checked;}
+        );
+            return (checked) ? $F(checked) : null;
+        }
+
+        function getSubtotal(eitems)
+        {
+            var subtotal = 0,
+                i = 0;
+
+            for (; i < eitems.id.length; i++) {
+
+                if (parseInt(eitems.remove[i]) === 1) { continue; }
+                var itemTotal = 0,
+                    qty = 0,
+                    price = 0,
+                    optionSubtotal = 0;
+
+                qty = parseInt(eitems.qty[i]);
+                price = parseFloat(eitems.price[i]);
+                if (eitems.option[i]) {
+                    optionSubtotal = getOptionsSubtotal(eitems.option[i]);
+                }
+
+                itemTotal = qty * price;
+                subtotal += itemTotal;
+
+            }
+            return subtotal;
+        }
+
+        function getOptionsSubtotal(option)
+        {
+            var subtotal = 0,
+                i = 0;
+
+            for (; i < option.length; i++) {
+                subtotal += parseFloat(option[i].optionPrice);
+            }
+
+            return subtotal;
+        }
+    </script>
+    <style type="text/css">
+        .admin-widget-edit-fields		{margin-bottom: 7px;}
+        .admin-widget-edit-fields label	{float: left; width: 160px;}
+        .admin-widget-edit-fields input	{width: 200px;}
+        .admin-widget-edit-req-field	{color: red; font-size: 12px;}
+        sdfvdf {text-decoration: line-through}
+    </style>
+
+
+    <?php echo $this->getChildHtml('order_info') ?>
+    <input type="hidden" name="order_id" value="<?php echo $_order->getId() ?>"/>
+    <?php if ($_order->getIsVirtual()): ?>
+        <div class="box-right">
+        <?php else: ?>
+            <div class="box-left">
+            <?php endif; ?>
+            <!--Payment Method-->
+            <div class="entry-edit">
+                <div class="entry-edit-head">
+                    <h4 class="icon-head head-payment-method"><?php echo Mage::helper('sales')->__('Payment Information') ?></h4>
+                </div>
+                <fieldset>
+                    <?php echo $this->getPaymentHtml() ?>
+                    <div><?php echo Mage::helper('sales')->__('Order was placed using %s', $_order->getOrderCurrencyCode()) ?></div>
+                </fieldset>
+            </div>
+        </div>
+        <?php if (!$_order->getIsVirtual()): ?>
+            <div class="box-right">
+                <!--Shipping Method-->
+                <div class="entry-edit">
+                    <div class="entry-edit-head">
+                        <h4 class="icon-head head-shipping-method"><?php echo Mage::helper('sales')->__('Shipping &amp; Handling Information') ?></h4>
+                    </div>
+                    <fieldset id="shippingmethod-static">
+                        <?php if ($_order->getTracksCollection()->count()) : ?>
+                            <?php echo $this->__('Track Order') ?>
+                            <br/>
+                        <?php endif; ?>
+                        <?php if ($_order->getShippingDescription()): ?>
+                            <strong><?php echo $_order->getShippingDescription() ?></strong>
+
+                            <?php if ($this->helper('tax')->displayShippingPriceIncludingTax()): ?>
+                                <?php $_excl = $this->displayShippingPriceInclTax($_order); ?>
+                            <?php else: ?>
+                                <?php $_excl = $this->displayPriceAttribute('shipping_amount', false, ' '); ?>
+                            <?php endif; ?>
+                            <?php $_incl = $this->displayShippingPriceInclTax($_order); ?>
+
+                            <?php echo $_excl; ?>
+                            <?php if ($this->helper('tax')->displayShippingBothPrices() && $_incl != $_excl): ?>
+                                (<?php echo $this->__('Incl. Tax'); ?> <?php echo $_incl; ?>)
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <?php echo $this->helper('sales')->__('No shipping information available'); ?>
+                        <?php endif; ?>
+                    </fieldset>
+
+                    <fieldset id="shippingmethod-edit-form" style="display:none;">
+                        <form id="shippingmethod-fields">
+                            <input type="hidden" name="type" value="shippingmethod" />
+                            <div id="shippingmethod-required-shippingmethod" class="admin-widget-edit-req-field" style="display:none;"><?php echo $this->__('A new shipping rate is required');?></div>
+                            <div id="shippingmethod-address-method-recalculate" ></div>
+                            <div id="shippingmethod-address-method-select" ></div>
+                            <input type="hidden" id="getShippingFlag" value="0">
+                        </form>
+                        <?php if (Mage::getStoreConfig('toe/orderedit/calc')): ?>
+                            <br /><button style="height:25px; width:280px; font-size:16px;" id="orderEdit" onclick="calcShipping();" type="button"><?php echo $this->__('Get shipping methods and rates');?></button>
+                        <?php endif ?>
+                    </fieldset>
+
+                </div>
+            </div>
+        <?php endif; ?>
+        <div class="clear"></div>
+
+        <?php echo $this->getGiftmessageHtml() ?>
+
+        <div class="clear"></div>
+        <div class="entry-edit">
+            <div class="entry-edit-head">
+                <h4 class="icon-head head-products"><?php echo Mage::helper('sales')->__('Items Ordered') ?></h4>
+            </div>
+            <script type="text/javascript">
+                !function($) {
+                    $(document).ready(function() {
+                        $(document).on("click", '.toggleEngravingView', function() {
+                            var parent = $(this.parentElement);
+
+                            parent.find('.engravingView').toggle();
+                            parent.find('.engravingViewLowercase').hide();
+                        });
+                        $(document).on("click", '.toggleEngravingViewLowercase', function(){
+                            var parent = $(this.parentElement);
+
+                            parent.find('.engravingViewLowercase').toggle();
+                            parent.find('.engravingView').hide();
+                        });
+                    });
+
+                    function updateCountdown() {
+                        var remaining = this.max - this.value.length;
+                        if (remaining <= 0) {
+                            remaining = '<span style="color:red;">0</span>';
+                        }
+                        var countdown = this.nextElementSibling;
+                        countdown.innerHTML = '<br>' + remaining;
+                    }
+
+                    $(function() {
+                        $('.countdownSubject').change(updateCountdown);
+                        $('.countdownSubject').keyup(updateCountdown);
+                    });
+
+                }(window.jQuery);
+            </script>
+        </div>
+        <?php echo $this->getItemsHtml() ?>
+        <div class="clear"></div>
+
+        <div class="entry-edit" id="item-grid-header" style="display:none">
+            <div class="entry-edit-head">
+                <h4 class="icon-head head-products"><?php echo Mage::helper('sales')->__('Select Item(s) to Add') ?></h4>
+            </div>
+            <div id="items-grid"></div>
+        </div>
+
+        <div class="clear"></div>
+
+        <div class="box-left">
+            <div class="entry-edit">
+                <div class="entry-edit-head">
+                    <h4><?php echo Mage::helper('sales')->__('Comments History') ?></h4>
+                </div>
+                <fieldset><?php echo $this->getChildHtml('order_history') ?></fieldset>
+            </div>
+        </div>
+        <div class="box-right entry-edit">
+            <div class="entry-edit-head"><h4><?php echo Mage::helper('sales')->__('Order Totals') ?></h4></div>
+            <div class="order-totals"><?php echo $this->getChildHtml('order_totals') ?></div>
+            <br />
+            <div class="entry-edit-head"><h4><?php echo Mage::helper('sales')->__('Email Template') ?></h4></div>
+            <fieldset>
+                <div><?php //echo get_class($this);                         ?></div>
+                <!-- -->
+                Please choose a listed template: 
+                <select class="select" id="history_template" onChange="updateTemplate()">
+                    <option value="-1">No template</option>
+                    <?php foreach ($this->getAllPMTemplates() as $_id => $_code): ?>
+                        <option value="<?php echo $_id ?>"><?php echo $_code ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <script type="text/javascript">
+                    var iframe_attach = null;
+                    var jsonString = null;
+                    var jsonObjects = null;
+                    function init() {
+                        document.getElementById('file_upload_form').onsubmit=function() {
+                            document.getElementById('file_upload_form').target = 'upload_target';
+                        }
+                    }
+                    function pmev_adj(str) {
+                        //
+                        var rcf = confirm("On submission, the page will be refreshed.\n\nAll other unsaved changes will be lost.\n\n\nAre you sure?");
+                        if(rcf) {
+                        
+                            //clear
+                            $('subjtemplate').innerHTML = "None";
+                            $('attfiles').innerHTML = "";
+                            $('storage_data').clear();
+                            var st = $$('select#history_template option')[0].selected = true;
+
+                            //original
+                            submitAndReloadPage($('order_history_block').parentNode, str); 
+                            
+                        
+                            //
+                            
+                        }
+                    }
+      
+                    function submitAndReloadPage(area, url) {
+                        if($(area)) {
+                            var fields = $(area).select('input', 'select', 'textarea');
+                            var data = Form.serializeElements(fields, true);
+                            url = url + (url.match(new RegExp('\\?')) ? '&isAjax=true' : '?isAjax=true');
+                            var request = new Ajax.Request(url, {
+                                parameters: $H(data),
+                                loaderArea: area,
+                                onSuccess: function(transport) {
+                                   window.location.reload();   
+                                }
+                            });
+                        }
+                    }
+                    
+                    function getContent() {
+                        
+                        iframe_attach = document.getElementById("upload_target");
+                        var jsonString =  iframe_attach.contentWindow.document.body.innerHTML;
+                        var uploaded = false;
+                        try {
+                            
+                            var jsonObjects = JSON.parse(jsonString);
+                            document.getElementById('template_attached_files').value = jsonString;
+                            $('attfiles').innerHTML = "";
+                            for(var j = 0; j < jsonObjects.length; j++) {
+                                
+                                if (jsonObjects[j].error != false) {
+                                    uploaded = false;
+                                    alert(jsonObjects[j].error);
+                                    break;
+                                }
+                                
+                                $('attfiles').insert('<div id="attchidval' + j + '">' + jsonObjects[j].name + ' (<a href="#" onClick=\'ajaxDeleteAttachment("' + jsonObjects[j].path + '", ' + j + ');\'>delete</a>)</div>');
+                                //console.log(jsonObjects[j].name + "->" + jsonObjects[j].path);
+                                uploaded = true;
+                            }
+                            
+                        } catch (h) {}
+                        if(uploaded)
+                            alert("All the attachments were uploaded.");
+                    }
+                    function ajaxDeleteAttachment(target_value, id) {
+                        var reloadurl = '<?php echo $this->getUrl('adminhtml/perfectm_upload/deleteattachment') ?>';
+                        new Ajax.Request(reloadurl, {
+                            method: 'post',
+                            parameters: { path: target_value }
+                        });
+                        $('attchidval' + id).hide();
+                    }
+                    window.onload=init;
+                </script>
+                <br /><b>Current Configuration:</b>
+                <div style='padding-left: 25px;'><b>Subject:</b> <span id="subjtemplate">None</span></div>
+                <form action="<?php echo $this->getUrl("adminhtml/perfectm_upload/uploadattachement") ?>" method="post" enctype="multipart/form-data" name="form" id="file_upload_form">
+                    <div><b>Attachments:</b> <input type="file" name="storage_data[]" id="storage_data" multiple="multiple" /> <button id="buttonUpload">Upload</button></div>
+                    <div><b>List of currently attached files:</b></div>
+                    <div id="attfiles"></div>
+                    <div>
+                        <iframe id="upload_target" name="upload_target" src="" style="width:0px; height:0px; border: 0px;" onload="getContent();"></iframe>
+                    </div>
+                    <input type="hidden" name="form_key" value="<?php echo Mage::getSingleton('core/session')->getFormKey(); ?>" />
+                </form>
+                <div>
+                    <br />
+                    <div style='padding: 15px; border: 1px solid #cccccc;'>
+                        <div>* <?php echo $this->__('The e-mail will be formated using the selected template.');?></div>
+                        <div>* <?php echo $this->__('The upload attachment supports multiple-uploads.Please select multiple files and then click upload.');?></div>
+                        <div>* <?php echo $this->__('You can upload one or more files for submission.');?></div>
+                        <div>* <?php echo $this->__('The "Comment" section represents just the body of the electronic message.');?></div>
+                        <div>* <?php echo $this->__('Without a template, the customer will not be notified.');?></div>
+                        <div>* <?php echo $this->__('Allowed extensions: *.txt, *.jpg, *.pdf, *.gif, *.png, *.docx, *.doc, *.jpeg, *.png'); ?></div>
+                    </div>
+                </div>
+                <!-- -->
+                <script type="text/javascript">
+                    //##################
+                    var template_value = -1;
+                    var ftransport1 = function(transport) {
+                        Element.hide('loading-mask');
+                        $('subjtemplate').innerHTML = "";
+                        $('subjtemplate').innerHTML = transport.responseText;
+                        $('template_mask_id').value = template_value;
+                    }
+                    var ftransport2 = function(transport) {
+                        Element.hide('loading-mask');
+                        $('history_comment').value = transport.responseText;
+                    }
+                    function updateTemplate() {
+                        var sObject = document.getElementById("history_template");
+                        template_value = sObject.options[sObject.selectedIndex].value;
+                        var orderno = <?php echo $_order->getRealOrderId(); ?>;
+                        var reloadurl = '<?php echo $this->getUrl('adminhtml/perfectm_template/getmailtemplate') ?>';
+                        new Ajax.Request(reloadurl, {
+                            method: 'post',
+                            parameters: { template_mask: template_value, order_id: orderno },
+                            onComplete: ftransport1
+                        });
+                        updateTemplateBody(template_value);
+                    }
+                    function updateTemplateBody(id) {
+                        var orderno = <?php echo $_order->getRealOrderId(); ?>;
+                        var reloadurl = '<?php echo $this->getUrl('adminhtml/perfectm_template/getemailtemplatebody') ?>';
+                        new Ajax.Request(reloadurl, {
+                            method: 'post',
+                            parameters: { template_mask: id ,order_id: orderno },
+                            onComplete: ftransport2
+                        });
+                    }
+                </script>
+                <!-- -->
+            </fieldset>
+        </div>
+        <div class="clear"></div>
+    </div>

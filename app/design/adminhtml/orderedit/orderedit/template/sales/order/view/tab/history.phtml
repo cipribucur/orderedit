@@ -1,0 +1,276 @@
+<?php
+/**
+ * @todo: rellocate the content of this file in multiple blocks and templates.
+ * @todo: this file has many html data repeated twice or more.
+ */
+?>
+<div id="threads_comments">
+<!-- Threaded Commenting System -->
+<div class="mg_wh_o_thcms">Order Work History (Threaded Commenting System)</div>
+<div id="threads_comments_deprecated">
+    <?php if ($this->getParentThreadsCount($this->getOrder()) > 0) : ?>
+        <div>
+            <?php foreach ($this->getParentThreads($this->getOrder()) as $thread) : ?>
+
+                <div style="border: 1px dashed red; padding: 10px;">
+                    <!-- Parent header Box -->
+                    <div><img src="<?php echo $this->getImage($thread); ?>" /> <b><?php echo $thread->getAuthor(); ?></b> @ <?php echo $this->getHumanReadableDate($thread); ?></div>
+                    <!-- -->
+                    <div style="<?php echo ($thread->getIsFlagged() == 1) ? "background-color: #f89595;" : ""; ?>">
+                        <?php echo $thread->getValue(); ?>
+                    </div>
+                    <div>
+                        <a onClick="showReplyBox(<?php echo $thread->getEntityId(); ?>);" href="#">Reply</a> |
+                        <a  href="#" onClick="markThread(<?php echo ($thread->getFlagId() != 2) ? '1' : '2'; ?>, <?php echo $thread->getEntityId(); ?>, <?php echo $thread->getFlagId(); ?>, <?php echo ($thread->getPreviousFlagId() == NULL) ? 0 : $thread->getPreviousFlagId(); ?>)"><?php echo ($thread->getFlagId() != 2) ? 'Mark' : 'Unmark'; ?> as completed</a> | 
+                        <a  href="#" onClick="markThread(<?php echo ($thread->getIsFlagged() == 0) ? "3" : "4"; ?>, <?php echo $thread->getEntityId(); ?>);"><?php echo ($thread->getIsFlagged() == 0) ? "Flag" : "Unflag"; ?> as problem</a> | 
+                        <a  href="#" onClick="changeThread(<?php echo $thread->getEntityId(); ?>);">Change thread status</a> | 
+                        <a  href="#" onClick="editThread(<?php echo $thread->getEntityId(); ?>)">Edit post</a>
+                    </div>
+                    <!-- Change thread status Box for Parent -->
+                    <div id="change_thread_status_<?php echo $thread->getEntityId(); ?>" style='display: none;'>
+                        <fieldset>
+                            <div>
+                                <select name="new_flag_option_<?php echo $thread->getEntityId(); ?>" id="new_flag_option_<?php echo $thread->getEntityId(); ?>" class="thread_select">
+                                    <?php foreach ($this->getFlags() as $flag) : ?>
+                                        <?php echo "<option value='" . $flag->getFlagId() . "'>" . $flag->getValue() . "</option>"; ?>
+                                    <?php endforeach; ?>
+                                </select>
+                                <input type="button" value="Post" class="thread_button" onClick="updateSubmission(1, <?php echo $thread->getEntityId(); ?>)" />
+                                <input type="button" value="Cancel" class="thread_button" onClick="hideBox(<?php echo $thread->getEntityId(); ?>);" />
+                            </div>
+                        </fieldset>
+                    </div>
+                    <!-- Edit Box for Parent -->
+                    <div id="change_thread_value_<?php echo $thread->getEntityId(); ?>" style='display: none;'>
+                        <fieldset>
+                            <div>
+                                <textarea id="change_content_<?php echo $thread->getEntityId(); ?>" name="change_content_<?php echo $thread->getEntityId(); ?>" class="thread_form"><?php echo $thread->getValue(); ?></textarea>
+                                <div><input type="button" value="Post" class="thread_button" onClick="updateSubmission(2, <?php echo $thread->getEntityId(); ?>)" />
+                                    <input type="button" value="Cancel" class="thread_button" onClick="hideThread(<?php echo $thread->getEntityId(); ?>);" /></div>
+                                
+                            </div>
+                        </fieldset>
+                    </div>
+                    <!-- Reply Box for Parent (Level 1 Childs) -->
+                    <div id="order_threaded_commeting_child_<?php echo $thread->getEntityId(); ?>" style="display: none;">
+                        <fieldset>
+                            <div>
+                                <textarea id="reply_content_child_<?php echo $thread->getEntityId(); ?>" name="reply_content_child_<?php echo $thread->getEntityId(); ?>" class="thread_form"></textarea>
+                                <input type="hidden" value="<?php echo $thread->getFlagId(); ?>" name="thread_flag_<?php echo $thread->getEntityId(); ?>" id="thread_flag_<?php echo $thread->getFlagId(); ?>" />
+                            </div>
+                            <div>
+                                <input type="button" value="Post" class="thread_button" onClick="levelingSubmission(true, <?php echo $thread->getEntityId(); ?>, 0)" />
+                                <input type="button" value="Cancel" class="thread_button" onClick="cancelReply(<?php echo $thread->getEntityId(); ?>)" />
+                            </div>
+                        </fieldset>
+                    </div>
+                    <!-- Childs Iteration -->
+                    <?php foreach ($this->getChildsPerThread($thread) as $child) : ?>
+                        <div style="padding-left: <?php echo $this->getAlignment(15, $child); ?>px;">
+                            <div style="border: 1px dashed #0000FF; padding: 10px;">
+                                <!-- Header Box for Child -->
+                                <div>
+                                    <img src="<?php echo $this->getImage($child); ?>" /> <b><?php echo $child->getAuthor(); ?></b> @ <?php echo $this->getHumanReadableDate($child); ?>
+                                </div>
+                                <!-- -->
+                                <div style="<?php echo ($child->getIsFlagged() == 1) ? "background-color: #f89595;" : ""; ?>">
+                                    <?php echo $child->getValue(); ?>
+                                </div>
+                                <div>
+                                    <a  href="#" onClick="showReplyBox(<?php echo $child->getEntityId(); ?>);">Reply</a> | 
+                                    <a  href="#" onClick="markThread(<?php echo ($child->getIsFlagged() == 0) ? "3" : "4"; ?>, <?php echo $child->getEntityId(); ?>);"><?php echo ($child->getIsFlagged() == 0) ? "Flag" : "Unflag"; ?> as problem</a> |
+                                    <a  href="#" onClick="editThread(<?php echo $child->getEntityId(); ?>)">Edit post</a>
+                                </div>
+                                <!-- Edit box for Child -->
+                                <div id="change_thread_value_<?php echo $child->getEntityId(); ?>" style='display: none;'>
+                                    <fieldset>
+                                        <div>
+                                            <textarea id="change_content_<?php echo $child->getEntityId(); ?>" name="change_content_<?php echo $child->getEntityId(); ?>" class="thread_form"><?php echo $child->getValue(); ?></textarea>
+                                            <div><input type="button" value="Post" class="thread_button" onClick="updateSubmission(2, <?php echo $child->getEntityId(); ?>)" />
+                                                <input type="button" value="Cancel" class="thread_button" onClick="hideThread(<?php echo $child->getEntityId(); ?>);" /></div>
+                                        </div>
+                                    </fieldset>
+                                </div>
+                                <!-- Reply Box for Child to Child -->
+                                <div id="order_threaded_commeting_child_<?php echo $child->getEntityId(); ?>" style="display: none;">
+                                    <fieldset>
+                                        <div>
+                                            <textarea id="reply_content_child_<?php echo $child->getEntityId(); ?>" name="reply_content_child_<?php echo $child->getEntityId(); ?>" class="thread_form"></textarea>
+                                            <input type="hidden" value="<?php echo $child->getPath(); ?>" name="child_level_<?php echo $child->getEntityId(); ?>" id="child_level_<?php echo $child->getEntityId(); ?>" />
+                                        </div>
+                                        <div>
+                                            <input type="button" value="Post" class="thread_button" onClick="levelingSubmission(false, <?php echo $thread->getEntityId(); ?>, <?php echo $child->getEntityId(); ?>)" />
+                                            <input type="button" value="Cancel" class="thread_button" onClick="cancelReply(<?php echo $child->getEntityId(); ?>)" />
+                                        </div>
+                                    </fieldset>
+                                </div>
+                                <!-- -->
+                            </div>
+                        </div>
+                        <?php
+                    endforeach;
+                    ?>
+                </div>
+                <br />
+            <?php endforeach; ?>
+        </div>
+    <?php else : ?>
+        <div>No threaded commenting exists at this moment.</div>
+    <?php endif; ?>
+</div>
+<div id="order_threaded_commeting_comment">
+    <fieldset>
+        <div><textarea name="thread_content" id="thread_content" class="thread_form"></textarea></div>
+        <div>
+            <select name="flag_option" id="flag_option" class="thread_select">
+                <?php foreach ($this->getFlags() as $flag) : ?>
+                    <?php echo "<option value='" . $flag->getFlagId() . "'>" . $flag->getValue() . "</option>"; ?>
+                <?php endforeach; ?>
+            </select>
+            <input type="button" value="Post" class="thread_button" onClick="ajaxSubmission()" />
+        </div>
+    </fieldset>
+</div>
+<!-- End of Threaded Commenting System -->
+<br />
+<!-- Magento Default Comment Schema -->
+<div class="mg_wh_o_thcms">Order Comment History</div>
+<div class="entry-edit">
+    <fieldset>
+        <ul class="note-list">
+            <?php foreach ($this->getFullHistory() as $_item): ?>
+                <li>
+                    <strong><?php echo $this->getItemCreatedAt($_item) ?></strong>
+                    <?php echo $this->getItemCreatedAt($_item, 'time') ?><span class="separator">|</span>
+                    <?php if ($this->getItemTitle($_item)): ?>
+                        <strong><?php echo $this->getItemTitle($_item) ?></strong>
+                        <span class="separator">|</span>
+                    <?php endif; ?>
+                    <small>
+                        <?php echo $this->helper('sales')->__('Customer') ?>
+                        <strong class="subdue">
+                            <?php if ($this->isCustomerNotificationNotApplicable($_item)): ?>
+                                <?php echo $this->helper('sales')->__('Notification Not Applicable') ?>
+                            <?php elseif ($this->isItemNotified($_item)): ?>
+                                <?php echo $this->helper('sales')->__('Notified') ?>
+                                <img src="<?php echo $this->getSkinUrl('images/ico_success.gif') ?>" width="16px" height="16px" alt="" />
+                            <?php else: ?>
+                                <?php echo $this->helper('sales')->__('Not Notified') ?>
+                            <?php endif; ?>
+                        </strong>
+                    </small>
+                    <?php if ($_comment = $this->getItemComment($_item)): ?>
+                        <br/><?php echo $_comment ?>
+                    <?php endif; ?>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    </fieldset>
+</div>
+<!-- End of Magento Default Comment Schema -->
+<script type="text/javascript">
+    document.observe("dom:loaded", function() {
+        //dom
+    });
+    
+    var author = "<?php echo $this->getAdminName(); ?>";
+    var orderId = "<?php echo $this->getOrder()->getEntityId(); ?>";
+    
+    var updateHeaderFlags = function(transport) {
+        console.log(transport);
+        jQuery("#headerFlags").html(transport.responseText + "<br />");
+    }
+    
+    var ftransport = function(transport) {
+        Element.hide('loading-mask');
+        $('threads_comments').innerHTML = "";
+        $('threads_comments').innerHTML = transport.responseText;
+        // refresh title flags
+        new Ajax.Request('<?Php echo $this->getUrl('adminhtml/perfectm_threaded/refreshFlag') ?>', {
+            method: 'post',
+            parameters: { orderId: orderId },
+            onComplete: updateHeaderFlags
+        });
+    }
+    
+    function markThread(id, tid, flag, pflag) {
+        var reloadurl = '<?Php echo $this->getUrl('adminhtml/perfectm_update/markthread') ?>';
+        new Ajax.Request(reloadurl, {
+            method: 'post',
+            parameters: { cmdid: id, thid: tid, lflag: flag, prevflag: pflag, order_id: orderId },
+            onComplete: ftransport
+        });
+    }
+    
+    function hideBox(id) {
+        $("change_thread_status_" + id).hide();
+    }
+    function changeThread(id) {
+        $("change_thread_status_" + id).show();
+    }
+    
+    function editThread(id) {
+        $("change_thread_value_" + id).show();
+    }
+    
+    function hideThread(id) {
+        $("change_thread_value_" + id).hide();
+    }
+    
+    function cancelReply(id) {
+        $("order_threaded_commeting_child_" + id).hide();
+    }
+    
+    function showReplyBox(id) {
+        $("order_threaded_commeting_child_" + id).show();
+    }
+
+    function levelingSubmission(submissionType, id, child_id) {
+        var flag = $$('[name="thread_flag_' + id + '"]')[0].value;
+        var parentId = (submissionType) ? id : child_id;
+        var comment = $$('[name="reply_content_child_' + ((submissionType) ? id : child_id) + '"]')[0].value;
+        var reloadurl = '<?Php echo $this->getUrl('adminhtml/perfectm_update/reply') ?>';
+        var path = null;
+        if(!submissionType) {
+            //level 1+
+            path = $$('[name="child_level_' + child_id + '"]')[0].value;
+        }
+        new Ajax.Request(reloadurl, {
+            method: 'post',
+            parameters: { comment: comment, order_id: orderId, author: author, flag: flag, parent_id: parentId, path: path },
+            onComplete: ftransport
+        });
+    }
+    
+    function ajaxSubmission() {
+        //used only for threads
+        var comment = $$('[name="thread_content"]')[0].value;
+        $$('[name="thread_content"]')[0].value = null;
+        var sObject = document.getElementById("flag_option");
+        var flag = sObject.options[sObject.selectedIndex].value;
+        var reloadurl = '<?php echo $this->getUrl('adminhtml/perfectm_update/submission') ?>';
+        new Ajax.Request(reloadurl, {
+            method: 'post',
+            parameters: { comment: comment, order_id: orderId, flag: flag, author: author },
+            onComplete: ftransport
+        });
+    }
+    
+    function updateSubmission(type, id) {
+        //both changes thread status and edit post
+        var sObject = (type == 1) ? document.getElementById("new_flag_option_" + id) : null;
+        var flag = (type == 1) ? sObject.options[sObject.selectedIndex].value : null;
+        var comment = null;
+        if(type != 1) {
+            comment = $$('[name="change_content_' + id + '"]')[0].value;
+        }
+        var reloadurl = '<?Php echo $this->getUrl('adminhtml/perfectm_update/updatesubmission') ?>';
+        new Ajax.Request(reloadurl, {
+            method: 'post',
+            parameters: { type_id: type, thread_id: id, comment: comment, flag: flag, order_id: orderId },
+            onComplete: ftransport
+        });
+        $("change_thread_status_" + id).hide();
+    }
+</script>
+</div>

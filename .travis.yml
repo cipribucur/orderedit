@@ -1,0 +1,37 @@
+language: php
+
+# faster builds on new travis setup not using sudo
+sudo: false
+
+# cache vendor dirs
+cache:
+  directories:
+    - vendor
+    - $HOME/.composer/cache
+
+php:
+  - 5.3
+  - 5.4
+  - 5.5
+  - 5.6
+  - nightly
+  - hhvm
+  - hhvm-nightly
+
+matrix:
+    allow_failures:
+        - php: nightly
+        - php: hhvm-nightly
+    fast_finish: true
+
+install:
+  - composer require --dev --no-update --no-progress phpmd/phpmd:@stable squizlabs/php_codesniffer:@stable sebastian/phpcpd:@stable
+  - composer update --no-plugins --prefer-source --no-interaction
+
+script:
+  - vendor/bin/phpmd app/code/community/Evozon/Core text codesize,unusedcode,naming --suffixes=.php
+  - vendor/bin/phpcs --standard=Zend --extensions=php app/code/community/Evozon/Core
+  - vendor/bin/phpcpd app/code/community/Evozon/Core
+
+notifications:
+  email: false

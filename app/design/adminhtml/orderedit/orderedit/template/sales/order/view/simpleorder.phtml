@@ -1,0 +1,38 @@
+<?php $_order = $this->getOrder() ?>
+<?php
+$orderAdminDate = $this->formatDate($_order->getCreatedAtDate(), 'medium', true);
+$orderStoreDate = $this->formatDate($_order->getCreatedAtStoreDate(), 'medium', true);
+?>
+<div class="entry-edit">
+    <?php if ($_order->getEmailSent()):
+        $_email = Mage::helper('sales')->__('the order confirmation email was sent');
+    else:
+        $_email = Mage::helper('sales')->__('the order confirmation email is not sent');
+    endif; ?>
+    <div class="entry-edit-head">
+            <a href="<?php echo $this->getOrderUrl() ?>" target="_blank"><?php echo Mage::helper('sales')->__('Order # %s', $_order->getRealOrderId()) ?></a>
+            <strong>(<?php echo $_email ?>)</strong>
+    </div>
+    <div class="fieldset">
+        <table cellspacing="0" class="form-list">
+            <tr>
+                <td class="label"><label><?php echo Mage::helper('sales')->__('Order Date') ?></label></td>
+                <td class="value"><strong><?php echo $orderAdminDate ?></strong></td>
+            </tr>
+            <?php if ($orderAdminDate != $orderStoreDate): ?>
+                <tr>
+                    <td class="label"><label><?php echo Mage::helper('sales')->__('Order Date (%s)', $_order->getCreatedAtStoreDate()->getTimezone()) ?></label></td>
+                    <td class="value"><strong><?php echo $orderStoreDate ?></strong></td>
+                </tr>
+            <?php endif; ?>
+            <tr>
+                <td class="label"><label><?php echo Mage::helper('sales')->__('Order Status') ?></label></td>
+                <td class="value"><strong><span id="order_status"><?php echo $_order->getStatusLabel() ?></span></strong></td>
+            </tr>
+            <tr>
+                <td class="label"><label><?php echo Mage::helper('sales')->__('Purchased From') ?></label></td>
+                <td class="value"><strong><?php echo $this->getOrderStoreName() ?></strong></td>
+            </tr>
+        </table>
+    </div>
+</div>

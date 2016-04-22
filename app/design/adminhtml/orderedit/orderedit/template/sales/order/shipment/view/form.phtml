@@ -1,0 +1,167 @@
+<?php
+/**
+ * Magento Enterprise Edition
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Magento Enterprise Edition License
+ * that is bundled with this package in the file LICENSE_EE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://www.magentocommerce.com/license/enterprise-edition
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@magentocommerce.com so we can send you a copy immediately.
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade Magento to newer
+ * versions in the future. If you wish to customize Magento for your
+ * needs please refer to http://www.magentocommerce.com for more information.
+ *
+ * @category    design
+ * @package     default_default
+ * @copyright   Copyright (c) 2012 Magento Inc. (http://www.magentocommerce.com)
+ * @license     http://www.magentocommerce.com/license/enterprise-edition
+ */
+?>
+<?php  $_order = $this->getShipment()->getOrder() ?>
+
+<div class="box-left">
+    <?php echo $this->getChildHtml('simple_order_info_data'); ?>
+    <div class="entry-edit">
+        <div class="entry-edit-head">
+        <h4 class="icon-head head-products"><?php echo $this->helper('sales')->__('Items Shipped') ?></h4>
+        </div>
+    </div>
+    <script type="text/javascript">
+        !function($) {
+            $(document).ready(function() {
+                $(document).on("click", '.toggleEngravingView', function() {
+                    var parent = $(this.parentElement);
+
+                    parent.find('.engravingView').toggle();
+                    parent.find('.engravingViewLowercase').hide();
+                });
+                $(document).on("click", '.toggleEngravingViewLowercase', function(){
+                    var parent = $(this.parentElement);
+
+                    parent.find('.engravingViewLowercase').toggle();
+                    parent.find('.engravingView').hide();
+                });
+            });
+
+            function updateCountdown() {
+                var remaining = this.max - this.value.length;
+                if (remaining <= 0) {
+                    remaining = '<span style="color:red;">0</span>';
+                }
+                var countdown = this.nextElementSibling;
+                countdown.innerHTML = '<br>' + remaining;
+            }
+
+            $(function() {
+                $('.countdownSubject').change(updateCountdown);
+                $('.countdownSubject').keyup(updateCountdown);
+            });
+
+        }(window.jQuery);
+    </script>
+    <?php echo $this->getChildHtml('shipment_items') ?>
+
+    <div class="entry-edit">
+        <div class="entry-edit-head"><h4><?php echo $this->__('Shipment History') ?></h4></div>
+        <fieldset><?php echo $this->getChildHtml('order_comments') ?></fieldset>
+    </div>
+
+    <?php echo $this->getChildHtml('shipment_packed') ?>
+</div>
+    
+<div class="box-left" style="display:none;">
+    <!--Billing Address-->
+    <div class="entry-edit">
+        <div class="entry-edit-head">
+            <h4 class="icon-head head-payment-method"><?php echo $this->helper('sales')->__('Payment Information') ?></h4>
+        </div>
+        <fieldset>
+            <div><?php echo $this->getChildHtml('order_payment') ?></div>
+            <div><?php echo Mage::helper('sales')->__('Order was placed using %s', $_order->getOrderCurrencyCode()) ?></div>
+        </fieldset>
+    </div>
+</div>
+
+<div class="box-right">
+
+    <!--Shipping Address-->
+    <div class="entry-edit">
+        <div class="entry-edit-head">
+            <h4 class="icon-head head-shipping-address"><?php echo Mage::helper('sales')->__('Shipping Address') ?></h4>
+        </div>
+        <fieldset>
+            <address><?php echo $_order->getShippingAddress()->getFormated(true) ?></address>
+        </fieldset>
+    </div>
+
+    <!--Shipping Address-->
+    <div class="entry-edit">
+        <div class="entry-edit-head">
+            <h4 class="icon-head head-shipping-method"><?php echo $this->helper('sales')->__('Shipping and Tracking Information') ?></h4>
+        </div>
+        <fieldset>
+            <div>
+                <?php if($this->getShipment()->getTracksCollection()->count()): ?>
+                <?php echo $this->__('Track this shipment') ?>
+                <br/>
+                <?php endif; ?>
+                <strong><?php echo $this->escapeHtml($_order->getShippingDescription()) ?></strong>
+                <?php echo $this->helper('sales')->__('Total Shipping Charges'); ?>:
+
+                <?php if ($this->helper('tax')->displayShippingPriceIncludingTax()): ?>
+                    <?php $_excl = $this->displayShippingPriceInclTax($_order); ?>
+                <?php else: ?>
+                    <?php $_excl = $this->displayPriceAttribute('shipping_amount', false, ' '); ?>
+                <?php endif; ?>
+                <?php $_incl = $this->displayShippingPriceInclTax($_order); ?>
+
+                <?php echo $_excl; ?>
+                <?php if ($this->helper('tax')->displayShippingBothPrices() && $_incl != $_excl): ?>
+                    (<?php echo $this->__('Incl. Tax'); ?> <?php echo $_incl; ?>)
+                <?php endif; ?>
+            </div>
+            <?php if ($this->canCreateShippingLabel()): ?>
+            <div style="text-align: center; margin: 10px 0;">
+                <?php echo $this->getCreateLabelButton()?>
+                <?php if ($this->getShipment()->getShippingLabel()): ?>
+                    <?php echo $this->getPrintLabelButton() ?>
+                <?php endif ?>
+                <?php if ($this->getShipment()->getPackages()): ?>
+                    <?php echo $this->getShowPackagesButton() ?>
+                <?php endif ?>
+            </div>
+            <?php endif ?>
+            <div><?php echo $this->getChildHtml('shipment_tracking') ?></div>
+        </fieldset>
+    <?php echo $this->getChildHtml('shipment_packaging') ?>
+    <script type="text/javascript">
+    //<![CDATA[
+        document.observe("dom:loaded", function() {
+            setTimeout(function(){
+                packaging.setConfirmPackagingCallback(function(){
+                    packaging.sendCreateLabelRequest();
+                });
+                packaging.setLabelCreatedCallback(function(response){
+                    setLocation("<?php echo $this->getUrl(
+                        '*/sales_order_shipment/view',
+                        array('shipment_id' => $this->getShipment()->getId())
+                    ); ?>");
+                });
+            }, 500);
+        });
+    //]]>
+    </script>
+    </div>
+
+    <?php echo $this->getChildHtml('order_tab_history') ?>
+
+</div>
+
+<div class="clear"></div>
